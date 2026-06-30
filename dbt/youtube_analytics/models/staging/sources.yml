@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: raw
+    database: YOUTUBE_ANALYTICS
+    schema: raw
+    tables:
+      - name: video_metrics
+
+models:
+  - name: stg_video_metrics
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: region_code
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['IN', 'US', 'GB']
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - video_id
+            - region_code
+            - ingested_at
