@@ -7,51 +7,85 @@ A production-style cloud data pipeline that automatically collects YouTube trend
 ## 🏗️ Architecture
 
 ```mermaid
-flowchart TD
-    A[YouTube Data API] --> B[EventBridge Scheduler\nevery 6 hours]
-    B --> C[AWS Lambda\nIngestion]
-    C --> D[S3 Bronze Layer\nRaw JSON]
-    D --> E[AWS Glue ETL\nJSON to Parquet]
-    E --> F[S3 Silver Layer\nClean Parquet]
-    F --> G[Snowflake\nData Warehouse]
-    G --> H[dbt\nStar Schema]
-    H --> I[Streamlit Dashboard\nBusiness Intelligence]
+flowchart LR
+
+subgraph Ingestion
+A[YouTube Data API<br/>IN • US • GB]
+B[EventBridge Scheduler<br/>Every 6 Hours]
+C[AWS Lambda<br/>Ingestion]
+D[S3 Bronze Layer<br/>Raw JSON]
+end
+
+subgraph Transformation
+E[AWS Glue ETL<br/>JSON → Parquet]
+F[S3 Silver Layer<br/>Clean Parquet]
+G[Snowflake<br/>Raw Warehouse]
+H[dbt<br/>Star Schema]
+end
+
+subgraph Analytics
+I[Streamlit Dashboard<br/>Business Intelligence]
+end
+
+subgraph Infrastructure
+J[AWS IAM<br/>Least Privilege Access]
+end
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
+G --> H
+H --> I
+
+J -.-> C
+J -.-> E
+J -.-> G
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Ingestion | AWS Lambda, YouTube Data API v3 |
-| Orchestration | AWS EventBridge Scheduler |
-| Storage | AWS S3 (Bronze + Silver) |
-| Transformation | AWS Glue (PySpark) |
-| Data Warehouse | Snowflake |
-| Data Modeling | dbt (Star Schema) |
-| Dashboard | Streamlit + Plotly |
-| Infrastructure | AWS IAM |
-| Version Control | GitHub |
+| Layer           | Technology                      |
+| --------------- | ------------------------------- |
+| Ingestion       | AWS Lambda, YouTube Data API v3 |
+| Orchestration   | AWS EventBridge Scheduler       |
+| Storage         | AWS S3 (Bronze + Silver)        |
+| Transformation  | AWS Glue (PySpark)              |
+| Data Warehouse  | Snowflake                       |
+| Data Modeling   | dbt (Star Schema)               |
+| Dashboard       | Streamlit + Plotly              |
+| Infrastructure  | AWS IAM                         |
+| Version Control | GitHub                          |
 
 ---
 
 ## 📐 Medallion Architecture
 
 ### Bronze Layer
-Raw JSON responses from YouTube API stored exactly as received. Partitioned by ingestion timestamp.
+
+Raw JSON responses from the YouTube API are stored exactly as received without any transformations. Data is partitioned by ingestion timestamp to simplify reprocessing and historical analysis.
 
 ### Silver Layer
-Cleaned and standardized Parquet files via AWS Glue ETL:
-- Schema normalization
-- Type casting (viewCount, likeCount → LONG)
-- Deduplication by `video_id + region_code + ingested_at`
-- Null filtering
+
+AWS Glue ETL jobs clean, standardize, and convert raw JSON into optimized Parquet files.
+
+Transformations include:
+
+* Schema normalization
+* Type casting (`viewCount`, `likeCount`, `commentCount` → LONG)
+* Deduplication using `video_id + region_code + ingested_at`
+* Null filtering
+* Standardized column naming
 
 ### Gold Layer — Snowflake + dbt
-Business-ready dimensional model:
 
-```
+Business-ready dimensional models are built using dbt following a Star Schema approach.
+
+```text
 fact_video_metrics
 ├── dim_channel
 ├── dim_category
@@ -59,50 +93,36 @@ fact_video_metrics
 └── dim_region
 ```
 
+The fact table captures the performance of a video within a specific region at a particular ingestion timestamp.
+
 ---
 
 ## 📊 Dashboard — Business Intelligence
 
 The Streamlit dashboard answers real content strategy questions:
 
-- **Niche Intelligence** — Which content categories get most views vs highest engagement?
-- **Best Time to Post** — Which day and hour maximizes reach?
-- **Cross-Region Opportunity** — Which videos are trending across IN/US/GB simultaneously?
-- **Creator Intelligence** — Which channels consistently appear in trending?
-
----
-
-## 🔑 Key Engineering Decisions
-
-**Why Lambda over EC2?**
-Ingestion runs every 6 hours and takes ~6 seconds. Serverless eliminates idle compute cost — Lambda costs nearly $0 for this workload vs EC2 running 24/7.
-
-**Why Glue over local PySpark?**
-Glue provides managed Spark without cluster setup, integrates natively with S3 and Glue Data Catalog, and scales automatically.
-
-**Why Parquet in Silver Layer?**
-Columnar format enables faster analytical queries compared to JSON. Snowflake COPY INTO reads Parquet natively without transformation overhead.
-
-**Why dbt for modeling?**
-dbt brings software engineering practices to SQL — version control, testing, documentation. Data quality tests run automatically on every model refresh.
-
-**Fact Table Grain Decision:**
-Initial assumption was video_id = unique key. Discovered via dbt uniqueness test that same video appears across multiple regions AND multiple ingestion snapshots. Correct grain is `video_id + region_code + ingested_at` — each row represents one video in one region at one point in time.
+* **Niche Intelligence** — Which content categories receive the highest views versus engagement?
+* **Best Time to Post** — Which day and hour maximize reach?
+* **Cross-Region Opportunity** — Which videos trend across multiple regions simultaneously?
+* **Creator Intelligence** — Which channels consistently appear in trending lists?
+* **Category Momentum** — Which categories are growing fastest over time?
+* **Regional Preferences** — How does audience behavior differ between countries?
 
 ---
 
 ## 🧪 Data Quality
 
 dbt tests implemented:
-- `not_null` — video_id, region_code
-- `accepted_values` — region_code in ['IN', 'US', 'GB']
-- `unique_combination` — video_id + region_code + ingested_at
+
+* `not_null` — `video_id`, `region_code`
+* `accepted_values` — `region_code` in `['IN', 'US', 'GB']`
+* `unique_combination` — `video_id + region_code + ingested_at`
 
 ---
 
 ## 📁 Repository Structure
 
-```
+```text
 aws-cloud-data-pipeline/
 ├── ingestion/
 │   └── lambda/
@@ -129,18 +149,48 @@ aws-cloud-data-pipeline/
 
 ## 🚀 Pipeline Flow
 
-1. **EventBridge** triggers Lambda every 6 hours
-2. **Lambda** fetches top 50 trending videos from IN, US, GB via YouTube Data API
-3. Raw JSON landed in **S3 Bronze** with timestamp-based paths
-4. **Glue ETL** reads Bronze JSON, cleans and transforms, writes **S3 Silver** as Parquet
-5. **Snowflake COPY INTO** loads Silver Parquet into raw schema
-6. **dbt run** builds star schema in presentation schema
-7. **Streamlit** dashboard reads from Snowflake presentation layer
+1. **EventBridge Scheduler** triggers the ingestion process every 6 hours.
+2. **AWS Lambda** fetches the top 50 trending videos from India, United States, and United Kingdom using the YouTube Data API.
+3. Raw JSON responses are stored in the **S3 Bronze Layer** using timestamp-based partitions.
+4. **AWS Glue ETL** reads Bronze data, applies transformations, and writes optimized Parquet files to the **S3 Silver Layer**.
+5. **Snowflake COPY INTO** loads Silver Parquet files into warehouse tables.
+6. **dbt run** builds dimensional models and business-ready marts.
+7. **Streamlit** queries Snowflake models to power the analytics dashboard.
 
 ---
 
 ## 📈 Data Volume
 
-- 150 videos per run (50 per region × 3 regions — IN, US, GB)
-- Pipeline runs every 6 hours
-- 1,912 unique video-region snapshots currently loaded
+* 150 videos collected per pipeline execution
+* 50 videos per region across IN, US, and GB
+* Pipeline runs every 6 hours
+* 4 ingestion cycles per day
+* 600 records generated daily
+* 1,900+ historical video-region snapshots currently available for analysis
+
+---
+
+## 🌍 Regions Covered
+
+| Region         | Code |
+| -------------- | ---- |
+| India          | IN   |
+| United States  | US   |
+| United Kingdom | GB   |
+
+---
+
+## 🎯 Project Goals
+
+This project was built to simulate a real-world cloud analytics platform using modern data engineering practices.
+
+The pipeline demonstrates:
+
+* Event-driven ingestion
+* Lakehouse architecture
+* Batch ETL processing with PySpark
+* Dimensional modeling with dbt
+* Data quality testing
+* Cloud-native analytics delivery
+
+The objective was to build an end-to-end system that covers the complete data lifecycle from ingestion to business intelligence reporting.
