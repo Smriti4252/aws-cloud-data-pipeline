@@ -6,24 +6,16 @@ A production-style cloud data pipeline that automatically collects YouTube trend
 
 ## 🏗️ Architecture
 
-```
-YouTube Data API
-      ↓
-AWS EventBridge Scheduler (every 6 hours)
-      ↓
-AWS Lambda (Ingestion)
-      ↓
-AWS S3 — Bronze Layer (raw JSON)
-      ↓
-AWS Glue ETL (transformation)
-      ↓
-AWS S3 — Silver Layer (Parquet)
-      ↓
-Snowflake Data Warehouse
-      ↓
-dbt (Star Schema Modeling)
-      ↓
-Streamlit Dashboard (Business Intelligence)
+```mermaid
+flowchart TD
+    A[YouTube Data API] --> B[EventBridge Scheduler\nevery 6 hours]
+    B --> C[AWS Lambda\nIngestion]
+    C --> D[S3 Bronze Layer\nRaw JSON]
+    D --> E[AWS Glue ETL\nJSON to Parquet]
+    E --> F[S3 Silver Layer\nClean Parquet]
+    F --> G[Snowflake\nData Warehouse]
+    G --> H[dbt\nStar Schema]
+    H --> I[Streamlit Dashboard\nBusiness Intelligence]
 ```
 
 ---
