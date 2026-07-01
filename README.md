@@ -1,8 +1,9 @@
-# 🎯 YouTube Analytics Lakehouse
-
 A production-style cloud data pipeline that automatically collects YouTube trending data, processes it through a Medallion Architecture, models it into a dimensional warehouse, and exposes business intelligence through an interactive dashboard.
 
 ---
+
+
+
 
 ## 🏗️ Architecture
 
@@ -49,17 +50,17 @@ J -.-> G
 
 ## 🛠️ Tech Stack
 
-| Layer           | Technology                      |
-| --------------- | ------------------------------- |
-| Ingestion       | AWS Lambda, YouTube Data API v3 |
-| Orchestration   | AWS EventBridge Scheduler       |
-| Storage         | AWS S3 (Bronze + Silver)        |
-| Transformation  | AWS Glue (PySpark)              |
-| Data Warehouse  | Snowflake                       |
-| Data Modeling   | dbt (Star Schema)               |
-| Dashboard       | Streamlit + Plotly              |
-| Infrastructure  | AWS IAM                         |
-| Version Control | GitHub                          |
+| Layer | Technology |
+|---|---|
+| Ingestion | AWS Lambda, YouTube Data API v3 |
+| Orchestration | AWS EventBridge Scheduler |
+| Storage | AWS S3 (Bronze + Silver) |
+| Transformation | AWS Glue (PySpark) |
+| Data Warehouse | Snowflake |
+| Data Modeling | dbt (Star Schema) |
+| Dashboard | Streamlit + Plotly |
+| Infrastructure | AWS IAM |
+| Version Control | GitHub |
 
 ---
 
@@ -110,6 +111,47 @@ The Streamlit dashboard answers real content strategy questions:
 
 ---
 
+## 📷 Dashboard Preview
+
+### 🎯 Niche Intelligence
+
+Compare categories by average views and engagement rate to understand which content performs best.
+
+
+<img width="1860" height="971" alt="image" src="https://github.com/user-attachments/assets/1099fd51-0d59-401f-82fd-c00765c27a06" />
+
+
+---
+
+### ⏰ Best Time to Post
+
+Identify the best day and hour to publish content based on historical trending performance.
+
+<img width="1847" height="742" alt="image" src="https://github.com/user-attachments/assets/52c7cb80-58fd-4f83-852f-2c7d0d5f6ad4" />
+
+
+---
+
+### 🌍 Cross-Region Opportunity
+
+Find videos that trend across multiple countries simultaneously and identify global content opportunities.
+
+<img width="1818" height="551" alt="image" src="https://github.com/user-attachments/assets/9436aab2-ac80-49a2-a986-fd303a7d8383" />
+
+
+
+
+---
+
+### 📺 Creator Intelligence
+
+Analyze channels that consistently appear in trending lists and compare engagement against audience reach.
+
+<img width="1783" height="672" alt="image" src="https://github.com/user-attachments/assets/a01367e7-a75a-4685-a562-49934c297d2e" />
+
+
+---
+
 ## 🧪 Data Quality
 
 dbt tests implemented:
@@ -124,23 +166,35 @@ dbt tests implemented:
 
 ```text
 aws-cloud-data-pipeline/
+├── images/
+│   ├── architecture.png
+│   ├── niche_intelligence.png
+│   ├── best_time_to_post.png
+│   ├── cross_region_opportunity.png
+│   └── creator_intelligence.png
+│
 ├── ingestion/
 │   └── lambda/
 │       └── handler.py
+│
 ├── glue/
 │   └── jobs/
 │       └── bronze_to_silver.py
+│
 ├── dbt/
 │   └── youtube_analytics/
 │       ├── models/
 │       │   ├── staging/
 │       │   └── marts/
 │       └── packages.yml
+│
 ├── streamlit/
 │   └── app.py
+│
 ├── infrastructure/
 │   └── snowflake/
 │       └── setup.sql
+│
 └── .github/
     └── workflows/
 ```
@@ -172,11 +226,11 @@ aws-cloud-data-pipeline/
 
 ## 🌍 Regions Covered
 
-| Region         | Code |
-| -------------- | ---- |
-| India          | IN   |
-| United States  | US   |
-| United Kingdom | GB   |
+| Region | Code |
+|--------|------|
+| India | IN |
+| United States | US |
+| United Kingdom | GB |
 
 ---
 
